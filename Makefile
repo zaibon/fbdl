@@ -1,4 +1,4 @@
-CC=gcc -g
+CC=gcc
 CFALGS=-Wall -O2 -std=gnu99
 IFLAGS=-Isrc
 LDFLAGS=-ljansson -lcurl
