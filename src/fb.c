@@ -95,7 +95,7 @@ list_t* getAlbums(const char* username)
         return NULL;
     }
 
-    snprintf(query, URL_SIZE, QUERY_ALBUM,username);
+    snprintf(query, URL_SIZE, QUERY_ALBUM,username,username);
     strcpy(query,curl_easy_escape(curl, query, 0));
 	snprintf(url,URL_SIZE, FB_QUERY_URL,query,FB_TOKEN);
     
