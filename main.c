@@ -3,6 +3,7 @@
 int main(int argc, char const *argv[])
 {
 	list_t *list;
+	album_t *album;
 
 	if(argc != 2){
 		printf("usage : fbdl username|pagename\n");
@@ -17,12 +18,16 @@ int main(int argc, char const *argv[])
 		return 1;
 	}
 
-	printf("Album de %s\n",list->album.name);
+	album = list->element;
+	printf("Album de %s\n",album->name);
 	for (int i = 0; list != NULL; i++)
 	{
-		printf("[%2d] %s (%d photos)\n",i,list->album.name,list->album.count );
+		printf("[%2d] %s (%d photos)\n",i,album->name,album->count );
 		list = list->next;
+		if(list != NULL)
+			album = list->element;
 	}
 
+	freeList(list);
 	return 0;
 }

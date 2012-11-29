@@ -8,6 +8,7 @@
 #define URL_SIZE 1024
 
 #define QUERY_ALBUM "SELECT aid,name,photo_count,owner FROM album WHERE owner IN (select uid from user WHERE username = '%s')"
+#define QUERY_PHOTO "SELECT src_big,pid"
 
 #define BUFFER_SIZE  (256 * 1024)  /* 256 KB */
 
@@ -19,9 +20,15 @@ typedef struct
 	unsigned int count;
 }album_t;
 
+typedef struct
+{
+	char *url;
+	char *pid;
+}photo_t;
+
 struct list_t
 {
-	album_t album;
+	void *element;
 	struct list_t* next;
 };
 typedef struct list_t list_t;
@@ -36,4 +43,5 @@ typedef struct
 size_t write_response(void *ptr, size_t size, size_t nmemb, void *stream);
 char* request(const char* url);
 list_t* getAlbums(const char* username);
+void freeList(list_t *list);
 #endif	

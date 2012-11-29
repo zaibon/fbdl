@@ -81,6 +81,8 @@ list_t* getAlbums(const char* username)
 	json_t *name;
 	json_t *count;
 
+    album_t *content;
+
 	list_t *list = NULL;
 	list_t* tmp = NULL;
 	list_t* prev = NULL;
@@ -127,12 +129,14 @@ list_t* getAlbums(const char* username)
     	count = json_object_get(album, "photo_count");
     	
 
+        content = (album_t*) malloc(sizeof(album_t));
     	tmp = (list_t*) malloc(sizeof(list_t));
+        tmp->element = content;
 
-        strncpy(tmp->album.aid, json_string_value(aid), 256);
-    	tmp->album.uid = json_integer_value(uid);    	
-        strncpy(tmp->album.name, json_string_value(name), 256);
-    	tmp->album.count = json_integer_value(count);
+        strncpy(content->aid, json_string_value(aid), 256);
+    	content->uid = json_integer_value(uid);    	
+        strncpy(content->name, json_string_value(name), 256);
+    	content->count = json_integer_value(count);
     	tmp->next = NULL;
 
     	if(list == NULL) /* premier passage*/
@@ -149,4 +153,18 @@ list_t* getAlbums(const char* username)
 
     json_decref(root);
     return list;
+}
+
+void freeList(list_t *list)
+{
+    list_t *tmp = list;
+    list_t *prev = NULL;
+
+    while(tmp != NULL)
+    {
+        prev = tmp;
+        tmp = tmp->next;
+        free(prev->element);
+        free(prev);
+    }
 }
