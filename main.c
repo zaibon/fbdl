@@ -1,9 +1,14 @@
 #include "fb.h"
+#include <stdlib.h>
+#include <sys/stat.h>
 
 int main(int argc, char const *argv[])
 {
-	list_t *list;
+	list_t *listAlbum;
+	list_t *listPhoto;
+	list_t *run;
 	album_t *album;
+	char buffer[4];
 
 	if(argc != 2){
 		printf("usage : fbdl username|pagename\n");
@@ -11,23 +16,51 @@ int main(int argc, char const *argv[])
 	}
 
 	printf("recupération album de %s\n",argv[1] );
-	list = getAlbums(argv[1]);
-	if(list == NULL)
+	listAlbum = getAlbums(argv[1]);
+	if(listAlbum == NULL)
 	{
 		fprintf(stderr, "%s\n", "Erreur recupération album");
 		return 1;
 	}
 
-	album = list->element;
+	album = listAlbum->element;
 	printf("Album de %s\n",album->name);
-	for (int i = 0; list != NULL; i++)
+
+	run = listAlbum;
+	for (int i = 0; run != NULL; i++)
 	{
-		printf("[%2d] %s (%d photos)\n",i,album->name,album->count );
-		list = list->next;
-		if(list != NULL)
-			album = list->element;
+		printf("[%2d] %s (%d photos) - %s\n",i,album->name,album->count,album->aid);
+		run = run->next;
+		if(run != NULL)
+			album = run->element;
 	}
 
-	freeList(list);
+	printf("\n Quel album voulez vous télécharger ? : ");
+	fgets(buffer, 4, stdin);
+
+	run = listAlbum;
+	for (int i = 0; i < atoi(buffer); ++i)
+	{
+		run = run->next;
+	}
+
+	album = run->element;
+	printf("téléchargement de l'album %s (%d photos)\n",album->name,album->count );
+	listPhoto = getPhotos(album->aid, album->count);
+
+	if( mkdir(album->name, 0775) == -1)
+	{
+		perror("error mkdir");
+		return 1;
+	}
+
+	if( downloadPhotos(listPhoto,album->name) == -1)
+	{
+		fprintf(stderr, "error download photo\n");
+		return 1;
+	}
+
+	freeList(listAlbum);
+	free(listPhoto);
 	return 0;
 }

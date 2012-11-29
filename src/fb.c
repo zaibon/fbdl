@@ -155,6 +155,143 @@ list_t* getAlbums(const char* username)
     return list;
 }
 
+list_t* getPhotos(char* aid, unsigned int count)
+{
+    char url[URL_SIZE];
+    char query[URL_SIZE];
+    char* response = NULL;
+
+    json_error_t error;
+    json_t *root;
+    json_t *photo;
+
+    json_t *src;
+    json_t *pid;
+
+    photo_t *content;
+
+    list_t *list = NULL;
+    list_t* tmp = NULL;
+    list_t* prev = NULL;
+
+    CURL *curl;
+    if( (curl = curl_easy_init()) == NULL)
+    {
+        fprintf(stderr, "%s\n", "erreur curl_easy_init");
+        return NULL;
+    }
+
+    snprintf(query, URL_SIZE, QUERY_PHOTO,aid,count);
+    strcpy(query,curl_easy_escape(curl, query, 0));
+    snprintf(url,URL_SIZE, FB_QUERY_URL,query,FB_TOKEN);
+    
+    curl_easy_cleanup(curl);
+
+    response = request(url);
+    if(!response)
+    {
+        fprintf(stderr, "%s\n", "Erreur request");
+        return NULL;
+    }
+
+    root = json_loads(response,0,&error);
+    if(!root)
+    free(response);
+
+    if(!root)
+    {
+        fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
+        return NULL;
+    }
+
+    for (int i = 0; i < json_array_size(root); i++)
+    {
+        photo = json_array_get(root, i);
+
+        src = json_object_get(photo, "src_big");
+        pid = json_object_get(photo, "pid");
+        
+
+        content = (photo_t*) malloc(sizeof(photo_t));
+        tmp = (list_t*) malloc(sizeof(list_t));
+        tmp->element = content;
+
+        strncpy(content->url, json_string_value(src), 256);
+        strncpy(content->pid, json_string_value(pid), 256);
+        tmp->next = NULL;
+
+        if(list == NULL) /* premier passage*/
+        {   
+            list = tmp;
+            prev = tmp;
+        }
+        else
+        {
+            prev->next = tmp;
+            prev = tmp;
+        }
+    }
+
+    json_decref(root);
+    return list;
+}
+
+int downloadPhotos(list_t *listPhoto, const char* dest)
+{
+    CURL *curl;
+    CURLcode status;
+
+    list_t *run = listPhoto;
+    photo_t *photo = NULL;
+
+    char path[256];
+    FILE *file;
+
+    int count = 0;
+
+    if( (curl = curl_easy_init()) == NULL)
+    {
+        fprintf(stderr, "%s\n", "erreur curl_easy_init");
+        return -1;
+    }
+
+    while(run != NULL)
+    {   
+        photo = run->element;
+
+        sprintf(path, "%s/%s.jpg",dest,photo->pid);
+        if( (file = fopen(path, "w")) == NULL)
+        {
+            perror("error fopen");
+            return -1;
+        }
+
+        curl_easy_setopt(curl, CURLOPT_URL, photo->url);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA,file);
+
+        status = curl_easy_perform(curl);
+
+        if(status != 0)
+        {
+            fprintf(stderr, "error: unable to request data from %s:\n", photo->url);
+            fprintf(stderr, "%s\n", curl_easy_strerror(status));
+            return -1;
+        }
+
+        if(fclose(file) == -1)
+        {
+            perror("error fclose");
+            return -1;
+        }        
+        count++;
+
+        run = run->next;
+    }
+
+    curl_easy_cleanup(curl);
+    return count;
+}
+
 void freeList(list_t *list)
 {
     list_t *tmp = list;
